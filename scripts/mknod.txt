@@ -1,0 +1,15 @@
+[ ! -e /dev/interceptor ] && mknod /dev/interceptor c 252 0
+
+PID=$( cat /tmp/client.pid )
+[ x$PID != x ] && kill $PID
+
+killall java
+
+(
+	cd ~/DSI/bin
+	( java -Dcom.sun.CORBA.giop.ORBGIOPVersion=1.0 HelloServer 2>&1 ) 1> /tmp/server &
+	( sleep 2; while true; do java -Dcom.sun.CORBA.giop.ORBGIOPVersion=1.0 HelloClient aaa 222 2>&1; done ) 1> /tmp/client &
+	echo $! > /tmp/client.pid
+)
+
+[ -e /proc/interceptor ] && sleep 2 && ( echo $( ps fax | grep -v grep | grep HelloServer | awk '{ print "[" $1 "]" }' ) > /proc/interceptor )
